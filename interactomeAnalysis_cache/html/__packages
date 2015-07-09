@@ -1,0 +1,16 @@
+base
+biomaRt
+gdata
+BiocGenerics
+Biobase
+S4Vectors
+IRanges
+GenomeInfoDb
+AnnotationDbi
+DBI
+RSQLite
+GO.db
+KEGGREST
+ggplot2
+gplots
+scales
