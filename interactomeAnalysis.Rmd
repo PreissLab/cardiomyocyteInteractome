@@ -3,16 +3,16 @@ title: "Cardiomyocyte interactome, additional KEGG & Gene Ontology analyses"
 author: "Sebastian Kurscheid"
 date: "1 July 2015"
 output:
+  pdf_document: default
   html_document:
     highlight: default
     theme: flatly
-  pdf_document: default
 ---
 
 R script for KEGG pathway analysis of cardiomyocyte RNA interactome proteins
 ============================================================================
 
-```{r loading_libraries_external_data_functions, echo = FALSE, cache = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=60)}
+```{r loading_libraries_external_data_functions, echo = FALSE, cache = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
 library("biomaRt")
 library("gdata")
 library("GO.db")
@@ -49,14 +49,14 @@ p.adjust.method = "fdr"
 ```
 Loading of the data tables.
 
-```{r loading_data_tables, echo = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=60)}
+```{r loading_data_tables, echo = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
 load("data/kegg.brite.rda")
 load("data/interactome.rda")
 load("data/wcl.rda")
 ```
 
 Fetching KEGG identifiers:
-```{r fetching_keggIDs_code, echo = TRUE, cache = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=60)}
+```{r fetching_keggIDs_code, echo = TRUE, cache = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
 ids <- unlist(lapply(strsplit(kegg.brite$C, " "), function(x) x[1]))
 rownames(kegg.brite) <- ids
 total.keggIDs <- keggLink("mmu", "pathway")
@@ -69,7 +69,7 @@ load("data/total.keggIDs.rda")
 We have found a total of `length(total.keggIDs)` which are used for mapping the WCL and interactome data.
 
 Now we proceed to mapping of WCL protein IDs to KEGG IDs and testing for enrichments against background of all KEGG proteins contained in KEGG pathways.
-```{r wcl_mapping_and_analysis, echo = TRUE, cache = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=60)}
+```{r wcl_mapping_and_analysis, echo = TRUE, cache = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
 # retrieved Entrez IDs from Biomart
 mouse <- useMart("ensembl", dataset = "mmusculus_gene_ensembl")
 human <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
@@ -138,7 +138,7 @@ save(wcl.df, file = "data/wcl.df.rda")
 ```
 
 Mapping of Interactome protein IDs to KEGG IDs and testing for enrichments against background of WCL proteins contained in KEGG pathways.
-```{r interactome_mapping_and_analysis, echo = TRUE, cache = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=60)}
+```{r interactome_mapping_and_analysis, echo = TRUE, cache = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
 interactome.entrez_ids <- getBM(attributes = c("ensembl_gene_id","entrezgene"), values = interactome[,"ensembl_gene_id"], filters = "ensembl_gene_id", mart = mouse)
 interactome.human_homologs <- getBM(attributes = c("ensembl_gene_id","hsapiens_homolog_ensembl_gene"), values = interactome[,"ensembl_gene_id"], filters = "ensembl_gene_id", mart = mouse)
 
@@ -207,7 +207,7 @@ save(interactome.df, file = "data/interactome.df.rda")
 ```
 
 KEGG contains three levels/hierarchies (A>B>C), here we summarize the enrichment at B level:
-```{r interactome_levelB_enrichment, echo=TRUE, cache=TRUE, eval=FALSE, tidy=TRUE, tidy.opts=(width.cutoff=60)}
+```{r interactome_levelB_enrichment, echo=TRUE, cache=TRUE, eval=FALSE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
 #---------interactome-summarizing data at "B" level before doing Fisher's Exact test------
 interactome.B.df <- data.frame(matrix(ncol = 5, nrow = length(unique(interactome.df$B))))
 colnames(interactome.B.df) <- c("B", "A", "total", "count", "source")
