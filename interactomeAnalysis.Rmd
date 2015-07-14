@@ -3,12 +3,12 @@ title: "Cardiomyocyte interactome, additional KEGG & Gene Ontology analyses"
 author: "Sebastian Kurscheid"
 date: "1 July 2015"
 output:
+  pdf_document:
+    toc: yes
+    toc_depth: 2
   html_document:
     highlight: default
     theme: flatly
-    toc: yes
-    toc_depth: 2
-  pdf_document:
     toc: yes
     toc_depth: 2
 ---
