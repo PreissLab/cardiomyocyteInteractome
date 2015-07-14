@@ -70,6 +70,7 @@ hsap.attribs <- listAttributes(human)
 kegg.brite <- read.xls("/Users/u1001407/Dropbox/REM project-Sebastian/Analysis/KEGG_Brite_Hierarchy.xlsx", sheet = 1, as.is = T)
 ids <- unlist(lapply(strsplit(kegg.brite$C, " "), function(x) x[1]))
 rownames(kegg.brite) <- ids
+save(kegg.brite, file = "data/kegg.brite.rda")
 total.keggIDs <- keggLink("mmu", "pathway")
 total.keggIDs <- unique(total.keggIDs)
 length(unique(total.keggIDs))
@@ -441,7 +442,6 @@ dfC$C <- l1
 #levels(dfC$C)[10:12] <- c("V", "VI", "VII") # Antibiotic biosynthesis, Carbon metabolism, AA biosynthesis
 
 
-#ggplot(data = dfC, aes(x = source, y = C)) + geom_tile(aes(fill = ft_OR.cut), colour = "white") + scale_fill_brewer(type = "div") + theme(axis.text.x = element_text(angle = 90))
 p1 <- ggplot(data = dfC, aes(y = source, x = C)) + 
       geom_tile(aes(fill = ft_OR.cut), colour = "white") + 
       scale_fill_manual(values = brewer_pal(pal = "PuOr")(8), labels = levels(dfC$ft_OR.cut)) + #
@@ -458,15 +458,9 @@ p1 <- ggplot(data = dfC, aes(y = source, x = C)) +
             legend.key.width = unit(3.5, "mm"),
             legend.margin = unit(0, "mm"),
             panel.margin = unit(1, "mm"))
+p1
 
 ggsave("/Users/u1001407/Dropbox//REM project-Sebastian/Figure_1g_20150603.pdf", plot = p1, scale = 1, height = 50, width = 110, unit = "mm")
-
-
-legend.direction = "vertical",
-legend.position = c(1, 0),
-legend.justification = "center") +
-  
-# "PRGn"
 
 # get highlighted pathway maps
 for (i in select1.pathIDs) {

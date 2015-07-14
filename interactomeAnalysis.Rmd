@@ -3,16 +3,23 @@ title: "Cardiomyocyte interactome, additional KEGG & Gene Ontology analyses"
 author: "Sebastian Kurscheid"
 date: "1 July 2015"
 output:
-  pdf_document: default
   html_document:
     highlight: default
     theme: flatly
+    toc: yes
+    toc_depth: 2
+  pdf_document:
+    toc: yes
+    toc_depth: 2
 ---
+
+
 
 R script for KEGG pathway analysis of cardiomyocyte RNA interactome proteins
 ============================================================================
 
-```{r loading_libraries_external_data_functions, echo = FALSE, cache = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
+## Loading libraries and creating custom functions:
+```{r loading_libraries_external_data_functions, echo = TRUE, cache = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
 library("biomaRt")
 library("gdata")
 library("GO.db")
@@ -22,6 +29,7 @@ library("gplots")
 library("grid")
 library("scales")
 
+# function for conversion of Entrez GeneIDs to KEGG gene IDs
 keggConv.batch <- function(x, max = 100, org = "mmu", id.type = "ncbi-geneid") {
   if (max > 100){
     on.exit(print("Maximum number of IDs at a given time is 100"))
@@ -47,15 +55,14 @@ alternative = "greater"
 p.adjust.method = "fdr"
 
 ```
-Loading of the data tables.
-
+## Loading data tables.
 ```{r loading_data_tables, echo = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
 load("data/kegg.brite.rda")
 load("data/interactome.rda")
 load("data/wcl.rda")
 ```
 
-Fetching KEGG identifiers:
+## Fetching KEGG identifiers:
 ```{r fetching_keggIDs_code, echo = TRUE, cache = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
 ids <- unlist(lapply(strsplit(kegg.brite$C, " "), function(x) x[1]))
 rownames(kegg.brite) <- ids
@@ -66,9 +73,9 @@ save(total.keggIDs, file = "data/total.keggIDs.rda")
 ```{r load_KeggIDs, echo = FALSE, cache = TRUE, eval = TRUE}
 load("data/total.keggIDs.rda")
 ```
-We have found a total of `length(total.keggIDs)` which are used for mapping the WCL and interactome data.
+We have found a total of `r length(total.keggIDs)` which are used for mapping the WCL and interactome data.
 
-Now we proceed to mapping of WCL protein IDs to KEGG IDs and testing for enrichments against background of all KEGG proteins contained in KEGG pathways.
+## Mapping of WCL protein IDs to KEGG IDs and testing for enrichments against background of all KEGG proteins contained in KEGG pathways.
 ```{r wcl_mapping_and_analysis, echo = TRUE, cache = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
 # retrieved Entrez IDs from Biomart
 mouse <- useMart("ensembl", dataset = "mmusculus_gene_ensembl")
@@ -137,7 +144,7 @@ wcl.df$ft_fdr <- p.adjust(wcl.df$ft_pval, method = "fdr")
 save(wcl.df, file = "data/wcl.df.rda")
 ```
 
-Mapping of Interactome protein IDs to KEGG IDs and testing for enrichments against background of WCL proteins contained in KEGG pathways.
+## Mapping of Interactome protein IDs to KEGG IDs and testing for enrichments against background of WCL proteins contained in KEGG pathways.
 ```{r interactome_mapping_and_analysis, echo = TRUE, cache = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
 interactome.entrez_ids <- getBM(attributes = c("ensembl_gene_id","entrezgene"), values = interactome[,"ensembl_gene_id"], filters = "ensembl_gene_id", mart = mouse)
 interactome.human_homologs <- getBM(attributes = c("ensembl_gene_id","hsapiens_homolog_ensembl_gene"), values = interactome[,"ensembl_gene_id"], filters = "ensembl_gene_id", mart = mouse)
@@ -205,8 +212,7 @@ interactome.df$ft_OR <- unlist(lapply(ftl, function(x) {x$estimate}))
 interactome.df$ft_fdr <- p.adjust(interactome.df$ft_pval, method = p.adjust.method, n = nrow(wcl.df))
 save(interactome.df, file = "data/interactome.df.rda")
 ```
-
-KEGG contains three levels/hierarchies (A>B>C), here we summarize the enrichment at B level:
+### KEGG contains three levels/hierarchies (A>B>C), here we summarize the enrichment at B level:
 ```{r interactome_levelB_enrichment, echo=TRUE, cache=TRUE, eval=FALSE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
 #---------interactome-summarizing data at "B" level before doing Fisher's Exact test------
 interactome.B.df <- data.frame(matrix(ncol = 5, nrow = length(unique(interactome.df$B))))
@@ -233,8 +239,8 @@ interactome.B.df$ft_fdr <- p.adjust(interactome.B.df$ft_pval, method = p.adjust.
 save(interactome.B.df, file = "data/interactome.B.df.rda")
 ```
 
-We are splitting the Interactome proteins into RNA-related and un-related proteins, based on annotation analysis (upstream of these steps):
-First, RNA-unrelated
+### Interactome proteins are annotated as RNA-related and un-related proteins, based on annotation analysis (upstream of these steps):
+#### RNA-unrelated
 ```{r interactome_RNA_unrelated_analysis, echo=TRUE, cache = TRUE, eval=FALSE}
 #-----------GO RNA unrelated-------------------------------------------
 # subset the interactome table
@@ -305,7 +311,7 @@ interactome.go_rna_unrelated.B.df$ft_fdr <- p.adjust(interactome.go_rna_unrelate
 save(interactome.go_rna_unrelated.B.df, file = "data/interactome.go_rna_unrelated.B.df")
 ```
 
-Now, RNA-related:
+#### RNA-related:
 ```{r interactome_RNA-related_analysis, echo=TRUE, cache = TRUE, eval=FALSE}
 #-----------GO RNA related-------------------------------------------
 interactome.go_rna_related <- interactome[-which(interactome$GO == "unrelated"),]
@@ -374,7 +380,7 @@ interactome.go_rna_related.B.df$ft_fdr <- p.adjust(interactome.go_rna_related.B.
 save(interactome.go_rna_related.B.df, file = "data/interactome.go_rna_related.B.df.rda")
 ```
 
-Plotting the results of the enrichment analysis:
+## Plotting the results of the enrichment analysis:
 ```{r plotting_results, echo=TRUE, cache = TRUE}
 library(ggplot2)
 library(grid)
@@ -454,5 +460,136 @@ p1 <- ggplot(data = dfC, aes(y = source, x = C)) +
       ggtitle("KEGG pathway enrichment")
   
 plot(p1)
+```
+
+R script for cardiovascular-associated GO term analysis of cardiomyocyte RNA interactome proteins
+============================================================================
+
+## Load libraries
+```{r loading_libraries_external_data_functions_GO, echo = TRUE, cache = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
+library(gdata)
+library(biomaRt)
+library(GO.db)
+library(ggplot2)
+
+# make lists from GO.db
+go.term <- as.list(GOTERM)
+go.bp.offspring <- as.list(GOBPOFFSPRING)
+go.cc.offspring <- as.list(GOCCOFFSPRING)
+```
+
+## Connect to Biomart
+```{r connect_to_biomaRt_GO, echo = TRUE, cache = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
+human <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
+mouse <- useMart("ensembl", dataset = "mmusculus_gene_ensembl")
+attribs <- listAttributes(mouse)
+filters <- listFilters(mouse)
+attribs.hsap <- listAttributes(human)
+```
+
+## Load data files
+```{r load_data_files_GO, echo = TRUE, cache = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
+load("data/wcl.rda")
+load("data/interactome.rda")
+load("data/cv.assoc.proteins.rda")
+```
+
+## ID mapping
+```{r ID_mapping_GO, echo = TRUE, cache = TRUE, eval = FALSE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
+# biomaRt attribute uniprot_swissprot
+mmus.cv.assoc <- getBM(attributes = c("ensembl_gene_id", "uniprot_swissprot"), filters = "uniprot_swissprot", values = cv.assoc.proteins[which(cv.assoc.proteins$Taxon == "10090"), "ID"], mart = mouse)
+hsap.cv.assoc <- getBM(attributes = c("ensembl_gene_id", "uniprot_swissprot"), filters = "uniprot_swissprot", values = cv.assoc.proteins[which(cv.assoc.proteins$Taxon == "9606"), "ID"], mart = human)
+hsap.cv.assoc.mmus.homologs <- getBM(attributes = c("ensembl_gene_id", "mmusculus_homolog_ensembl_gene"), filters = "uniprot_swissprot", values = cv.assoc.proteins[which(cv.assoc.proteins$Taxon == "9606"), "ID"], mart = human)
+
+i1 <- intersect(unique(mmus.cv.assoc$ensembl_gene_id), interactome$ensembl_gene_id)
+i2 <- intersect(unique(hsap.cv.assoc.mmus.homologs$mmusculus_homolog_ensembl_gene), interactome$ensembl_gene_id)
+i3 <- c(i1[which(!i1 %in% intersect(i1, i2))], i2[which(!i2 %in% intersect(i1, i2))])
+
+interactome.go_ids <- getBM(attributes = c("ensembl_gene_id", "go_id"), filters = "ensembl_gene_id", values = interactome$ensembl_gene_id, mart = mouse)
+# subtract genes which are in common between interactome and WCL
+wcl <- wcl[-which(wcl$ensembl_gene_id %in% interactome$ensembl_gene_id),]
+wcl.go_ids <- getBM(attributes = c("ensembl_gene_id", "go_id"), filters = "ensembl_gene_id", values =wcl$ensembl_gene_id, mart = mouse)
+  
+cv.go_terms.bp <- c("GO:0007507", "GO:0048738", "GO:0008015", "GO:0050878", "GO:0001944", "GO:0042060", "GO:0006979", "GO:0016055", "GO:0006520", "GO:0050817", "GO:0006629", "GO:0006936", "GO:0048771", "GO:0051145", "GO:0007517", "GO:0042692", "GO:0048659")
+cv.go_terms.cc <- c("GO:0005739", "GO:0005578")
+```
+
+## Count term frequencies in Interactome and WCL data and produce bar plots:
+```{r load_barplots_data_GO, echo = FALSE, cache = TRUE, eval = TRUE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
+load("data/df.go_bp.rda")
+load("data/df.go_cc.rda")
+load("data/interactome.go_ids.rda")
+cv.go_terms.bp <- c("GO:0007507", "GO:0048738", "GO:0008015", "GO:0050878", "GO:0001944", "GO:0042060", "GO:0006979", "GO:0016055", "GO:0006520", "GO:0050817", "GO:0006629", "GO:0006936", "GO:0048771", "GO:0051145", "GO:0007517", "GO:0042692", "GO:0048659")
+cv.go_terms.cc <- c("GO:0005739", "GO:0005578")
+load("data/go.bp.offspring.rda")
+load("data/go.cc.offspring.rda")
+load("data/wcl.go_ids.rda")
+load("data/go.term.rda")
+```
+
+```{r print_barplots_GO, echo = TRUE, cache = TRUE, eval = TRUE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
+interactome.cv.go_bp.offsp <- sapply(cv.go_terms.bp, function(x) length(unique(interactome.go_ids[which(interactome.go_ids$go_id %in% unlist(go.bp.offspring[x])), "ensembl_gene_id"])))
+interactome.cv.go_cc.offsp <- sapply(cv.go_terms.cc, function(x) length(unique(interactome.go_ids[which(interactome.go_ids$go_id %in% unlist(go.cc.offspring[x])), "ensembl_gene_id"])))
+interactome.cv.go_bp.offsp.IDs <- sapply(cv.go_terms.bp, function(x) unique(interactome.go_ids[which(interactome.go_ids$go_id %in% unlist(go.bp.offspring[x])), "ensembl_gene_id"]))
+interactome.cv.go_cc.offsp.IDs <- sapply(cv.go_terms.cc, function(x) unique(interactome.go_ids[which(interactome.go_ids$go_id %in% unlist(go.cc.offspring[x])), "ensembl_gene_id"]))
+
+wcl.cv.go_bp.offsp <- sapply(cv.go_terms.bp, function(x) length(unique(wcl.go_ids[which(wcl.go_ids$go_id %in% unlist(go.bp.offspring[x])), "ensembl_gene_id"])))
+wcl.cv.go_cc.offsp <- sapply(cv.go_terms.cc, function(x) length(unique(wcl.go_ids[which(wcl.go_ids$go_id %in% unlist(go.cc.offspring[x])), "ensembl_gene_id"])))
+wcl.cv.go_bp.offsp.IDs <- sapply(cv.go_terms.bp, function(x) unique(wcl.go_ids[which(wcl.go_ids$go_id %in% unlist(go.bp.offspring[x])), "ensembl_gene_id"]))
+wcl.cv.go_cc.offsp.IDs <- sapply(cv.go_terms.cc, function(x) unique(wcl.go_ids[which(wcl.go_ids$go_id %in% unlist(go.cc.offspring[x])), "ensembl_gene_id"]))
+```
+
+```{r count_BP_terms_GO, echo = TRUE, cache = TRUE, eval = TRUE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
+df.go_bp.interactome <- as.data.frame(interactome.cv.go_bp.offsp)
+colnames(df.go_bp.interactome) <- "count"
+df.go_bp.interactome$id <- rownames(df.go_bp.interactome)
+df.go_bp.interactome$group <- "interactome"
+
+df.go_bp.wcl <- as.data.frame(wcl.cv.go_bp.offsp)
+colnames(df.go_bp.wcl) <- "count"
+df.go_bp.wcl$group <- "wcl"
+df.go_bp.wcl$id <- rownames(df.go_bp.wcl)
+
+df.go_bp <- rbind(df.go_bp.interactome, df.go_bp.wcl)
+
+df.go_bp$term <- sapply(df.go_bp$id, function(x) go.term[x][[1]]@Term)
+n1 <- length(unique(interactome.go_ids[which(interactome.go_ids$go_id %in% unlist(go.bp.offspring[cv.go_terms.bp])), "ensembl_gene_id"]))
+n2 <- length(unique(wcl.go_ids[which(wcl.go_ids$go_id %in% unlist(go.bp.offspring[cv.go_terms.bp])), "ensembl_gene_id"]))
+```
+
+### Plotting the frequency of GO BP term descendants of major cardiovascular-associated GO terms
+```{r plot_BP_terms_GO, echo = TRUE, cache = TRUE, eval = TRUE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
+hist.go_bp <- ggplot(df.go_bp, aes(term, count, group = group, fill = group)) + geom_bar(postion = "dodge", stat = "identity")
+hist.go_bp <- hist.go_bp + theme(axis.text.x = element_text(angle = 90))
+hist.go_bp <- hist.go_bp + labs(title = paste("CV-associated gene counts\n in GO BP terms for Interactome [N = ", n1, "] and WCL only [N = ", n2, "]", sep = ""))
+print(hist.go_bp)
+```
+
+```{r count_CC_terms_GO, echo = TRUE, cache = TRUE, eval = TRUE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
+df.go_cc.interactome <- as.data.frame(interactome.cv.go_cc.offsp)
+colnames(df.go_cc.interactome)[1] <- "count"
+df.go_cc.interactome$group <- "interactome"
+df.go_cc.interactome$id <- rownames(df.go_cc.interactome)
+df.go_cc.interactome$term <- sapply(rownames(df.go_cc.interactome), function(x) go.term[x][[1]]@Term)
+
+df.go_cc.wcl <- as.data.frame(wcl.cv.go_cc.offsp)
+colnames(df.go_cc.wcl) <- "count"
+df.go_cc.wcl$group <- "wcl"
+df.go_cc.wcl$id <- rownames(df.go_cc.wcl)
+df.go_cc.wcl$term <- sapply(rownames(df.go_cc.wcl), function(x) go.term[x][[1]]@Term)
+
+df.go_cc <- rbind(df.go_cc.interactome, df.go_cc.wcl)
+df.go_cc$group <- as.factor(df.go_cc$group)
+
+n1 <- length(unique(interactome.go_ids[which(interactome.go_ids$go_id %in% unlist(go.cc.offspring[cv.go_terms.cc])), "ensembl_gene_id"]))
+n2 <- length(unique(wcl.go_ids[which(wcl.go_ids$go_id %in% unlist(go.cc.offspring[cv.go_terms.cc])), "ensembl_gene_id"]))
+```
+
+### Plotting the frequency of GO CC term descendants of major cardiovascular-associated GO terms
+```{r plot_CC_terms_GO, echo = TRUE, cache = TRUE, eval = TRUE, tidy=TRUE, tidy.opts=(width.cutoff=50)}
+hist.go_cc <- ggplot(df.go_cc, aes(term, count, group = group, fill = group)) + geom_bar(postion = "dodge", stat = "identity")
+hist.go_cc <- hist.go_cc + theme(axis.text.x = element_text(angle = 0))
+hist.go_cc <- hist.go_cc + labs(title = paste("CV-associated gene counts\n in GO CC terms for Interactome [N = ", n1, "] and WCL only [N = ", n2, "]", sep = ""))
+print(hist.go_cc)
 ```
 

@@ -13,10 +13,9 @@ attribs.hsap <- listAttributes(human)
 
 # load IDs
 cv.assoc.proteins <- read.xls("/Volumes/MHS//workgroups/jcsmr//PreissLab/Sebastian Kurscheid/Annotations//GO/cardiovascular_associated_proteins.xlsx", sheet = 1, header = T, as.is = T)
-interactome <- read.xls("/Users/u1001407/Dropbox/REM project-Sebastian/HL-1 interactome superset.xlsx", sheet = "sheet 1" , as.is = T)
-wcl <- read.xls("/Users/u1001407/Dropbox/REM project-Sebastian/HL-1 interactome superset.xlsx", sheet = "WCL GO RNAbind" , as.is = T)
-colnames(interactome)[c(1,2)] <- c("ensembl_gene_id", "gene_symbol")
-colnames(wcl) <- c("ensembl_gene_id", "gene_symbol", "GO Term", "RBD type")
+save(cv.assoc.proteins, file = "data/cv.assoc.proteins.rda")
+load("data/wcl.rda")
+load("data/interactome.rda")
 
 # biomaRt attribute uniprot_swissprot
 mmus.cv.assoc <- getBM(attributes = c("ensembl_gene_id", "uniprot_swissprot"), filters = "uniprot_swissprot", values = cv.assoc.proteins[which(cv.assoc.proteins$Taxon == "10090"), "ID"], mart = mouse)
@@ -54,15 +53,15 @@ wcl.cv.go_cc.offsp.IDs <- sapply(cv.go_terms.cc, function(x) unique(wcl.go_ids[w
 
 df.go_bp.interactome <- as.data.frame(interactome.cv.go_bp.offsp)
 colnames(df.go_bp.interactome) <- "count"
-df.go_bp.interactome$group <- rep("interactome", nrow(df.go_bp.interactome))
+df.go_bp.interactome$id <- rownames(df.go_bp.interactome)
+df.go_bp.interactome$group <- "interactome"
 
 df.go_bp.wcl <- as.data.frame(wcl.cv.go_bp.offsp)
 colnames(df.go_bp.wcl) <- "count"
-df.go_bp.wcl$group <- rep("wcl", nrow(df.go_bp.wcl))
+df.go_bp.wcl$group <- "wcl"
 df.go_bp.wcl$id <- rownames(df.go_bp.wcl)
 
 df.go_bp <- rbind(df.go_bp.interactome, df.go_bp.wcl)
-df.go_bp$id <- c(rownames(df.go_bp.interactome), rownames(df.go_bp.wcl))
 
 df.go_bp$term <- sapply(df.go_bp$id, function(x) xx[x][[1]]@Term)
 n1 <- length(unique(interactome.go_ids[which(interactome.go_ids$go_id %in% unlist(go.bp.offspring[cv.go_terms.bp])), "ensembl_gene_id"]))
@@ -77,14 +76,27 @@ pdf("/Users/u1001407/Dropbox/REM project-Sebastian/WCL_and_Interactome_cardiovas
 hist.go_bp
 dev.off()
 
-df.go_cc <- as.data.frame(interactome.cv.go_cc.offsp)
-colnames(df.go_cc)[1] <- "count"
-df.go_cc$id <- rownames(df.go_cc)
-df.go_cc$term <- sapply(rownames(df.go_cc), function(x) xx[x][[1]]@Term)
-hist.go_cc <- ggplot(df.go_cc, aes(term, count)) + geom_histogram(stat = "identity", fill = "blue")
-n <- length(unique(interactome.go_ids[which(interactome.go_ids$go_id %in% unlist(go.cc.offspring[cv.go_terms.cc])), "ensembl_gene_id"]))
+df.go_cc.interactome <- as.data.frame(interactome.cv.go_cc.offsp)
+colnames(df.go_cc.interactome)[1] <- "count"
+df.go_cc.interactome$group <- "interactome"
+df.go_cc.interactome$id <- rownames(df.go_cc.interactome)
+df.go_cc.interactome$term <- sapply(rownames(df.go_cc.interactome), function(x) xx[x][[1]]@Term)
+
+df.go_cc.wcl <- as.data.frame(wcl.cv.go_cc.offsp)
+colnames(df.go_cc.wcl) <- "count"
+df.go_cc.wcl$group <- "wcl"
+df.go_cc.wcl$id <- rownames(df.go_cc.wcl)
+df.go_cc.wcl$term <- sapply(rownames(df.go_cc.wcl), function(x) xx[x][[1]]@Term)
+
+df.go_cc <- rbind(df.go_cc.interactome, df.go_cc.wcl)
+df.go_cc$group <- as.factor(df.go_cc$group)
+
+n1 <- length(unique(interactome.go_ids[which(interactome.go_ids$go_id %in% unlist(go.cc.offspring[cv.go_terms.cc])), "ensembl_gene_id"]))
+n2 <- length(unique(wcl.go_ids[which(wcl.go_ids$go_id %in% unlist(go.cc.offspring[cv.go_terms.cc])), "ensembl_gene_id"]))
+
+hist.go_cc <- ggplot(df.go_cc, aes(term, count, group = group, fill = group)) + geom_bar(postion = "dodge", stat = "identity")
 hist.go_cc <- hist.go_cc + theme(axis.text.x = element_text(angle = 0))
-hist.go_cc <- hist.go_cc + labs(title = paste("CV-associated Interactome genes\n GO CC [N = ", n, "]", sep = ""))
+hist.go_cc <- hist.go_cc + labs(title = paste("CV-associated gene counts\n in GO CC terms for Interactome [N = ", n1, "] and WCL only [N = ", n2, "]", sep = ""))
 
 pdf("/Users/u1001407/Dropbox/REM project-Sebastian/Interactome_cardiovascular_assoc_genes_GO_CC_histogram.pdf", paper = "a4")
 hist.go_cc
@@ -98,13 +110,7 @@ for (i in 1:length(interactome.cv.go_bp.offsp.IDs)) {
   df1[1 : length(interactome.cv.go_bp.offsp.IDs[[i]]) + 1 , i] <- as.vector(unlist(interactome.cv.go_bp.offsp.IDs[i]))
 }
 
-# make a table with GO terms and associated gene IDs
-df1 <- data.frame(matrix(nrow = max(interactome.cv.go_cc.offsp) + 1, ncol = length(interactome.cv.go_cc.offsp)))
-colnames(df1) <- names(interactome.cv.go_cc.offsp.IDs)
-df1[1,] <- sapply(names(interactome.cv.go_cc.offsp.IDs), function(x) xx[x][[1]]@Term)
-for (i in 1:length(interactome.cv.go_cc.offsp.IDs)) {
-  df1[1 : length(interactome.cv.go_cc.offsp.IDs[[i]]) + 1 , i] <- as.vector(unlist(interactome.cv.go_cc.offsp.IDs[i]))
-}
+
 write.csv(df1, file = "/Users/u1001407/Dropbox/REM project-Sebastian/Interactome_cardiovascular_associated_GO_CC_gene_ensembl_IDs_table.csv")
 
 
