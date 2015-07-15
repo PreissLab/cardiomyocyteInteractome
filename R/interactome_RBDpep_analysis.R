@@ -23,14 +23,13 @@ library("biomaRt")
 library("gdata")
 library("ggplot2")
 library("Biostrings")
-library("bio3d")
 
 #---------create biomaRt connections---------------------------------
 mouse <- useMart("ensembl", dataset = "mmusculus_gene_ensembl")
 human <- useMart("ensembl", dataset = "hsapiens_gene_ensembl")
 mmus.attribs <- listAttributes(mouse)
 
-mouse#---------load data--------------------------------------------------
+#---------load data--------------------------------------------------
 RBDpep.hl1 <- read.xls("~/Dropbox/REM project-Sebastian/RBDpep analysis/HL-1 RBDmap peptide.xlsx", sheet = 1, as.is = T)
 RBDpep.HeLa <- read.xls("~/Dropbox/REM project-Sebastian/RBDpep analysis/HeLa RBDmap peptides.xlsx", sheet = 1, as.is = T)
 
@@ -112,9 +111,10 @@ RBDpep.merge$hsapFragmentStart <- unlist(lapply(apply(RBDpep.merge, 1, function(
 RBDpep.merge$hsapFragmentStop <- unlist(lapply(apply(RBDpep.merge, 1, function(x) RBDpep.HeLa[RBDpep.HeLa$fragmentSequence == x["hsapFragment"], ]), function(y) unique(y["fragmentStop"])))
 
 pdf("~/Dropbox/REM project-Sebastian/RBDpep analysis/MMus_histogram.pdf")
-h1 <- hist(RBDpep.merge[!duplicated(RBDpep.merge$hsapFragment),]$hsapSimilarity, labels = T, col = "gray", main = "Frequency of similarity\n HL-1 RBDpep fragments vs. HeLa fragments [N = 237]", xlab = "Similarity [%]")
+h1 <- hist(RBDpep.merge[!duplicated(RBDpep.merge$hsapFragment),]$hsapSimilarity, plot = F)
+h1 <- hist(RBDpep.merge[!duplicated(RBDpep.merge$hsapFragment),]$hsapSimilarity, labels = T, col = "gray", main = paste("Frequency of similarity\n HL-1 RBDpep fragments vs. HeLa fragments [N = ", sum(h1$counts), "]", sep = ""), xlab = "Similarity [%]")
 dev.off()
-sum(h1$counts)
+
 
 write.csv(RBDpep.merge[!duplicated(RBDpep.merge$hsapFragment),], file = "~/Dropbox/REM project-Sebastian/RBDpep analysis/Mmus_nique.csv")
 
